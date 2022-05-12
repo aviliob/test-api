@@ -8,6 +8,7 @@ import { UtilsService } from './shared/utils/utils.service';
 import { UtilsModule } from './shared/utils/utils.module';
 import { ConfigModule } from '@nestjs/config';
 import { FirebaseModule } from './shared/firebase/firebase.module';
+import { CurrencyModule } from './shared/currency/currency.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { FirebaseModule } from './shared/firebase/firebase.module';
     UtilsModule,
     ConfigModule.forRoot(),
     FirebaseModule,
+    CurrencyModule,
   ],
   controllers: [AppController],
   providers: [AppService, UtilsService],

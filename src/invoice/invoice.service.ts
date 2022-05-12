@@ -2,7 +2,9 @@ import { HttpService } from '@nestjs/axios';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { firstValueFrom } from 'rxjs';
+import { CurrencyEnum, INVOICE_FILE_URL } from 'src/constants';
 import { InvoiceEntity, InvoiceResponse } from 'src/entities/invoices.entity';
+import { CurrencyService } from 'src/shared/currency/currency.service';
 import { FirebaseService } from 'src/shared/firebase/firebase.service';
 import { UtilsService } from 'src/shared/utils/utils.service';
 
@@ -14,6 +16,7 @@ export class InvoiceService {
     private httpService: HttpService,
     private utilsService: UtilsService,
     private firebaseService: FirebaseService,
+    private currencyService: CurrencyService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
@@ -21,11 +24,7 @@ export class InvoiceService {
     this.logger.log('Update Invoices Cron started');
 
     this.logger.log('Donwloading csv...');
-    const result = await firstValueFrom(
-      this.httpService.get(
-        'https://api.github.com/gists/f70a484ec20b8ea43c67f95a58597c29',
-      ),
-    );
+    const result = await firstValueFrom(this.httpService.get(INVOICE_FILE_URL));
 
     this.logger.log('Parsing csv...');
     const csvData = this.utilsService.csvToJSON(
@@ -61,19 +60,30 @@ export class InvoiceService {
     return;
   }
 
-  async getAll() {
+  async getAll(currency: CurrencyEnum) {
+    let currencyInfo = undefined;
+
+    if (currency) {
+      currencyInfo = await this.currencyService.getCurrencyRates(currency);
+    }
     const invoices = await this.firebaseService.getCollection<InvoiceEntity>(
       'invoices',
     );
-    return invoices.map((i) => new InvoiceResponse(i));
+    return invoices.map((i) => new InvoiceResponse({ ...i, currencyInfo }));
   }
 
   async getInvoicesWithFilters(
     vendorId: string,
     startDate: string,
     endDate: string,
+    currency: CurrencyEnum,
   ) {
     let query;
+    let currencyInfo = undefined;
+
+    if (currency) {
+      currencyInfo = await this.currencyService.getCurrencyRates(currency);
+    }
 
     if (vendorId) {
       query = this.firebaseService
@@ -121,6 +131,8 @@ export class InvoiceService {
 
     const snap = await query.get();
 
-    return snap.docs.map((doc: any) => new InvoiceResponse(doc.data()));
+    return snap.docs.map(
+      (doc: any) => new InvoiceResponse({ ...doc.data(), currencyInfo }),
+    );
   }
 }
