@@ -59,6 +59,8 @@ You will see something like this.
 
 ## Arquitecture Diagram
 
+We used Cloud Build Google Cloud service for building the container image, push it to Container Registry and then use it as a service with Cloud Run and expose it. The container image has a Nestjs app that write and read data from Firebase NoSql Database (Firestore) througth Firebase SDK (Firebase Admin) that have Service Account permissions only for tasks associated to Firebase Services. This app also will be communicating with an external public API to get currency rates for conversions and receiving requests on premise from clients.
+
 ![Alt text](https://firebasestorage.googleapis.com/v0/b/test-xepelin.appspot.com/o/Screenshot%202022-05-12%20075501.png?alt=media&token=95dc7829-20ae-4344-aa13-79383845b58e 'Arquitecture Diagram')
 
 ## Production ENV
